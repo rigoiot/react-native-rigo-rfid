@@ -11,7 +11,7 @@ android {
         versionCode 1
         versionName "1.0"
         ndk {
-            abiFilters "armeabi-v7a", "x86"
+            abiFilters "armeabi"
         }
     }
     lintOptions {
@@ -20,6 +20,6 @@ android {
 }
 
 dependencies {
+    compile fileTree(dir: "libs", include: ["*.jar"])
     compile 'com.facebook.react:react-native:0.20.+'
 }
-  
