@@ -1,21 +1,25 @@
 package com.rigoiot;
 
 import java.util.HashMap;
+import java.util.Timer;
+
+import com.clouiotech.pda.rfid.EPCModel;
 import com.clouiotech.pda.rfid.IAsynchronousMessage;
 import com.clouiotech.pda.rfid.uhf.UHF;
 import com.clouiotech.pda.rfid.uhf.UHFReader;
 import com.clouiotech.port.Adapt;
+import com.clouiotech.util.Helper.Helper_ThreadPool;
+
+import com.facebook.react.bridge.Callback;
+
 import android.annotation.SuppressLint;
 import android.util.Log;
 
-/**
- * @author RFID_lx Activity 基类
- */
 public class UHFBase {
-  static String TAG = "UHFBase"; 
+
+  static String TAG = "UHFBase";
+
 	static Boolean _UHFSTATE = false; // 模块是否已经打开
-	// static int _PingPong_ReadTime = 10000; // 默认是100:3
-	// static int _PingPong_StopTime = 300;
 	static int _NowAntennaNo = 1; // 读写器天线编号
 	static int _UpDataTime = 0; // 重复标签上传时间，控制标签上传速度不要太快
 	static int _Max_Power = 30; // 读写器最大发射功率
@@ -23,24 +27,23 @@ public class UHFBase {
 
 	static int low_power_soc = 10;
 
+  private static boolean isStartRead = false; // 是否启动间歇读
+
 	public static UHF CLReader = UHFReader.getUHFInstance();
 
 	/**
 	 * 超高频模块初始化
-	 * 
-	 * @param log
-	 *            接口回调方法
+	 *
 	 * @return 是否初始化成功
 	 */
-	public Boolean UHF_Init(boolean usingBackupPower, IAsynchronousMessage log) {
+	public Boolean UHF_Init(IAsynchronousMessage handle) {
 		Boolean rt = false;
 		try {
 			if (_UHFSTATE == false) {
-				rt = CLReader.OpenConnect(usingBackupPower, log);
+				rt = CLReader.OpenConnect(canUsingBackBattery(), handle);
 				if (rt) {
 					_UHFSTATE = true;
 				}
-				
 				Thread.sleep(500);
 			} else {
 				rt = true;
@@ -51,9 +54,10 @@ public class UHFBase {
 		return rt;
 	}
 
-	/**
-	 * 超高频模块释放
-	 */
+  /**
+   * 超高频模块释放
+   *
+   */
 	public void UHF_Dispose() {
 		if (_UHFSTATE == true) {
 			CLReader.CloseConnect();
@@ -66,7 +70,7 @@ public class UHFBase {
 	 */
 	@SuppressLint("UseSparseArrays")
 	@SuppressWarnings("serial")
-	protected void UHF_GetReaderProperty() {
+	public void UHF_GetReaderProperty() {
 		String propertyStr = CLReader.GetReaderProperty();
 		Log.d(TAG, "获得读写器能力：" + propertyStr);
 		String[] propertyArr = propertyStr.split("\\|");
@@ -95,7 +99,7 @@ public class UHFBase {
 	/**
 	 * 设置标签上传参数
 	 */
-	protected void UHF_SetTagUpdateParam() {
+	public void UHF_SetTagUpdateParam() {
 		// 先查询当前的设置是否一致，如果不一致才设置
 		String searchRT = CLReader.GetTagUpdateParam();
 		String[] arrRT = searchRT.split("\\|");
@@ -114,10 +118,72 @@ public class UHFBase {
 	}
 
 	// 判断副电电量
-	protected Boolean canUsingBackBattery() {
+	public Boolean canUsingBackBattery() {
 		if (Adapt.getPowermanagerInstance().getBackupPowerSOC() < low_power_soc) {
 			return false;
 		}
 		return true;
 	}
+
+  /**
+   * 读数据
+   *
+   * @param type
+   *            标签类型，6C或6B
+   * @param param
+   *            指定读数据的输入参数
+   * @param readTime
+   *            读等待完成时间
+   * @param stopTime
+   *            读停止等待完成时间
+   *
+   * @return 是否可以读取
+   */
+  public boolean Read(final String type, final String param, final int readTime, final int stopTime, final UHFMessageHandle handle) {
+
+    // 先释放模块再初始化
+    UHF_Dispose();
+    if (!UHF_Init(handle)) {
+      return false;
+    }
+
+    isStartRead = true;
+    Helper_ThreadPool.ThreadPool_StartSingle(new Runnable() {
+      @Override
+      public void run() {
+        while (isStartRead) {
+          try {
+            if (type.equals("6C")) { // 读6C标签
+              CLReader.Read_EPC(param);
+            } else { // 读6B标签
+              CLReader.Get6B(param);
+            }
+
+            // 等待读完成
+            Thread.sleep(readTime);
+
+            if (stopTime > 0) {
+              CLReader.Stop();
+              // 等待停止完成
+              Thread.sleep(stopTime);
+            }
+          } catch (Exception e) {
+            Log.d(TAG, "读数据异常！");
+            e.printStackTrace();
+          }
+        }
+      }
+    });
+
+    return true;
+  }
+
+  /**
+   * 停止读写操作
+   *
+   */
+  public void Stop() {
+    isStartRead = false;
+    CLReader.Stop();
+  }
 }
