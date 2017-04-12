@@ -2,15 +2,18 @@
 package com.rigoiot;
 
 import android.os.Build;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.clouiotech.pda.rfid.EPCModel;
+import com.clouiotech.pda.rfid.uhf.UHFReader;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 public class RNRigoRfidModule extends ReactContextBaseJavaModule {
 
@@ -44,41 +47,81 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
         || "google_sdk".equals(Build.PRODUCT);
   }
 
-  /**
-   * 读数据
-   *
-   * @param type     标签类型，6C或6B
-   * @param param    指定读数据的输入参数
-   * @param readTime 读等待完成时间
-   * @param stopTime 读停止等待完成时间
-   * @param cb       结果回调
-   * @return 是否可以读取
-   */
+  // Send event to JS
+  private void sendEvent(String eventName,
+                         @Nullable WritableMap params) {
+    reactContext
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+        .emit(eventName, params);
+  }
+
+    /**
+     * 读数据
+     *
+     * @param type     标签类型，6C或6B
+     * @param param    指定读数据的输入参数
+     * @param readTime 读等待完成时间
+     * @param stopTime 读停止等待完成时间
+     * @param readStart 读用户区的开始位置
+     * @param readLen   读用户区的长度
+     * @param cb       结果回调
+     * @return 是否可以读取
+     */
   @ReactMethod
-  public void read(final String type, final String param, final int readTime, final int stopTime, final Callback cb) {
-    Log.v(TAG, "Read()");
+  public void read(final String type,
+                   final int readType,
+                   final String param,
+                   final int readTime,
+                   final int stopTime,
+                   final int readStart,
+                   final int readLen,
+                   final Callback cb) {
+    Log.i(TAG, "Read()");
     if (isEmulator()) {
-      cb.invoke("Not supported", null);
+      cb.invoke("Not supported", false);
+      WritableMap map = Arguments.createMap();
+      map.putString("EPC", "111111111");
+      map.putString("TID", "222222222");
+      map.putString("SensorData", "010101010101");
+      map.putDouble("Temperature", -64);
+      map.putString("UserData", "模拟数据，无效温度");
+      map.putString("TagetData", "0000000000");
+      map.putString("TagType", "6C");
+      sendEvent("rigoiotRFIDEvent", map);
+
+      WritableMap map2 = Arguments.createMap();
+      map.putString("EPC", "000000000");
+      map.putString("TID", "111111111");
+      map.putString("SensorData", "010101010101");
+      map.putDouble("Temperature", -20.5);
+      map.putString("UserData", "模拟数据");
+      map.putString("TagetData", "0000000000");
+      map.putString("TagType", "6C");
+      sendEvent("rigoiotRFIDEvent", map2);
       return;
     }
 
     UHFMessageHandle handle = new UHFMessageHandle() {
       @Override
       public void OutPutEPC(EPCModel epcModel) {
+        Log.i(TAG, "Read(): " + epcModel.toString());
         WritableMap map = Arguments.createMap();
         map.putString("EPC", epcModel._EPC);
         map.putString("TID", epcModel._TID);
         map.putString("SensorData", epcModel._SensorData);
+        map.putDouble("Temperature", UHFReader._TagEM.ConvetTemp(epcModel));
         map.putString("UserData", epcModel._UserData);
         map.putString("TagetData", epcModel._TagetData);
         map.putString("TagType", epcModel._TagType);
-        cb.invoke(null, map);
+        sendEvent("rigoiotRFIDEvent", map);
       }
     };
 
-    if (!mUHF.Read(type, param, readTime, stopTime, handle)) {
-      cb.invoke("Read failed", null);
+    if (!mUHF.Read(type, readType, param, readTime, stopTime, readStart, readLen, handle)) {
+      cb.invoke("Read failed", false);
     }
+
+    cb.invoke("", true);
   }
 
   /**

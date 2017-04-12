@@ -49,7 +49,7 @@ public class UHFBase {
 				rt = true;
 			}
 		} catch (Exception ex) {
-			Log.d(TAG, "UHF上电出现异常：" + ex.getMessage());
+			Log.e(TAG, "UHF上电出现异常：" + ex.getMessage());
 		}
 		return rt;
 	}
@@ -60,6 +60,7 @@ public class UHFBase {
    */
 	public void UHF_Dispose() {
 		if (_UHFSTATE == true) {
+      CLReader.Stop();
 			CLReader.CloseConnect();
 			_UHFSTATE = false;
 		}
@@ -72,7 +73,7 @@ public class UHFBase {
 	@SuppressWarnings("serial")
 	public void UHF_GetReaderProperty() {
 		String propertyStr = CLReader.GetReaderProperty();
-		Log.d(TAG, "获得读写器能力：" + propertyStr);
+		Log.e(TAG, "获得读写器能力：" + propertyStr);
 		String[] propertyArr = propertyStr.split("\\|");
 		HashMap<Integer, Integer> hm_Power = new HashMap<Integer, Integer>() {
 			{
@@ -89,10 +90,10 @@ public class UHFBase {
 				int powerIndex = Integer.parseInt(propertyArr[2]);
 				_NowAntennaNo = hm_Power.get(powerIndex);
 			} catch (Exception ex) {
-				Log.d(TAG, "获得读写器能力失败,转换失败！");
+				Log.e(TAG, "获得读写器能力失败,转换失败！");
 			}
 		} else {
-			Log.d(TAG, "获得读写器能力失败！");
+			Log.e(TAG, "获得读写器能力失败！");
 		}
 	}
 
@@ -105,15 +106,15 @@ public class UHFBase {
 		String[] arrRT = searchRT.split("\\|");
 		if (arrRT.length >= 2) {
 			int nowUpDataTime = Integer.parseInt(arrRT[0]);
-			Log.d(TAG, "查标签上传时间：" + nowUpDataTime);
+			Log.e(TAG, "查标签上传时间：" + nowUpDataTime);
 			if (_UpDataTime != nowUpDataTime) {
 				CLReader.SetTagUpdateParam("1," + _UpDataTime); // 设置标签重复上传时间为20ms
-				Log.d(TAG, "设置标签上传时间...");
+				Log.e(TAG, "设置标签上传时间...");
 			} else {
 
 			}
 		} else {
-			Log.d(TAG, "查询标签上传时间失败...");
+			Log.e(TAG, "查询标签上传时间失败...");
 		}
 	}
 
@@ -136,14 +137,37 @@ public class UHFBase {
    *            读等待完成时间
    * @param stopTime
    *            读停止等待完成时间
+   * @param readStart
+   *            读用户区的开始位置
+   * @param readLen
+   *            读用户区的长度
    *
    * @return 是否可以读取
    */
-  public boolean Read(final String type, final String param, final int readTime, final int stopTime, final UHFMessageHandle handle) {
+  public boolean Read(final String type,
+                      final int readType,
+                      final String param,
+                      final int readTime,
+                      final int stopTime,
+                      final int readStart,
+                      final int readLen,
+                      final UHFMessageHandle handle) {
 
     // 先释放模块再初始化
     UHF_Dispose();
     if (!UHF_Init(handle)) {
+      return false;
+    }
+
+    try {
+      UHF_GetReaderProperty(); // 获得读写器的能力
+      Thread.sleep(20);
+      CLReader.Stop(); // 停止指令
+      Thread.sleep(20);
+      UHF_SetTagUpdateParam(); // 设置标签重复上传时间为20ms
+    } catch (Exception e) {
+      Log.e(TAG, "获得读写器的能力/设置标签！");
+      e.printStackTrace();
       return false;
     }
 
@@ -154,9 +178,15 @@ public class UHFBase {
         while (isStartRead) {
           try {
             if (type.equals("6C")) { // 读6C标签
-              CLReader.Read_EPC(param);
+              if (1 == readType) {
+                UHFReader._TagEM.GetEPC_TID(_NowAntennaNo, 1);
+              } else if (2 == readType) {
+                UHFReader._TagEM.GetEPC_TID_UserData(_NowAntennaNo, 1, readStart, readLen);
+              } else {
+                UHFReader._TagEM.GetEPC(_NowAntennaNo, 1);
+              }
             } else { // 读6B标签
-              CLReader.Get6B(param);
+              CLReader.Get6B(_NowAntennaNo + param);
             }
 
             // 等待读完成
@@ -168,7 +198,7 @@ public class UHFBase {
               Thread.sleep(stopTime);
             }
           } catch (Exception e) {
-            Log.d(TAG, "读数据异常！");
+            Log.e(TAG, "读数据异常！");
             e.printStackTrace();
           }
         }
