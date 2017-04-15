@@ -59,13 +59,13 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
      * 读数据
      *
      * @param type     标签类型，6C或6B
+     * @param readType 读数据类型，0: EPC，1: TID，2: UserData
      * @param param    指定读数据的输入参数
      * @param readTime 读等待完成时间
      * @param stopTime 读停止等待完成时间
      * @param readStart 读用户区的开始位置
      * @param readLen   读用户区的长度
      * @param cb       结果回调
-     * @return 是否可以读取
      */
   @ReactMethod
   public void read(final String type,
@@ -134,5 +134,44 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
       return;
     }
     mUHF.Stop();
+  }
+
+  /**
+   * 写数据
+   *
+   * @param type
+   *            标签类型，6C或6B
+   * @param writeType
+   *            写入数据的类型，0: EPC，1: UserData
+   * @param TID
+   *            匹配的TID
+   * @param data
+   *            写入数据
+   * @param cb  结果回调
+   */
+  @ReactMethod
+  public void Write(final String type,
+                       final int writeType,
+                       final String TID,
+                       final String data,
+                       final Callback cb) {
+    Log.i(TAG, "Write()");
+    if (isEmulator()) {
+      cb.invoke("Not supported", false);
+      return;
+    }
+
+    UHFMessageHandle handle = new UHFMessageHandle() {
+      @Override
+      public void OutPutEPC(EPCModel epcModel) {
+        Log.i(TAG, "Write(): " + epcModel.toString());
+      }
+    };
+
+    if (!mUHF.Write(type, writeType, TID, data, handle)) {
+      cb.invoke("Write failed", false);
+    }
+
+    cb.invoke("", true);
   }
 }

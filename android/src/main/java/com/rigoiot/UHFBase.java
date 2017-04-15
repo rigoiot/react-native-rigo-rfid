@@ -216,4 +216,50 @@ public class UHFBase {
     isStartRead = false;
     CLReader.Stop();
   }
+
+	/**
+	 * 写数据
+	 *
+	 * @param type
+	 *            标签类型，6C或6B
+	 * @param writeType
+	 *            写入数据的类型，0: EPC，1: UserData
+	 * @param TID
+	 *            匹配的TID
+	 * @param data
+	 *            写入数据
+	 *
+	 * @return 是否写入成功
+	 */
+	public boolean Write(final String type,
+                       final int writeType,
+                       final String TID,
+                       final String data,
+                       final UHFMessageHandle handle) {
+
+		// 先释放模块再初始化
+		UHF_Dispose();
+		if (!UHF_Init(handle)) {
+			return false;
+		}
+
+		int dataLen = data.length() % 4 == 0 ? data.length() / 4 : data.length() / 4 + 1;
+
+    try {
+			if (type.equals("6C")) { // 6C标签
+				if (1 == writeType) {
+          return UHFReader._Tag6C.WriteUserData_MatchTID(_NowAntennaNo, data, TID, 0) != -1;
+				} else {
+          return UHFReader._Tag6C.WriteEPC_MatchTID(_NowAntennaNo, data, TID, 0) != -1;
+				}
+			} else { // 6B标签
+        return false;
+      }
+		} catch (Exception e) {
+			Log.e(TAG, "写数据异常！");
+			e.printStackTrace();
+		}
+
+		return true;
+	}
 }
