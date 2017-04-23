@@ -92,11 +92,11 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
       WritableMap map2 = Arguments.createMap();
       map2.putString("EPC", "000000000");
       map2.putString("TID", "111111111");
-      map2.putString("SensorData", "010101010101");
-      map2.putDouble("Temperature", -20.5);
-      map2.putString("UserData", "模拟数据");
-      map2.putString("TagetData", "0000000000");
-      map2.putString("TagType", "6C");
+      map2.putString("sensorData", "010101010101");
+      map2.putDouble("temperature", -20.5);
+      map2.putString("userData", "模拟数据");
+      map2.putString("tagetData", "0000000000");
+      map2.putString("tagType", "6C");
       sendEvent("rigoiotRFIDEvent", map2);
       return;
     }
@@ -108,11 +108,11 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
         WritableMap map = Arguments.createMap();
         map.putString("EPC", epcModel._EPC);
         map.putString("TID", epcModel._TID);
-        map.putString("SensorData", epcModel._SensorData);
-        map.putDouble("Temperature", UHFReader._TagEM.ConvetTemp(epcModel));
-        map.putString("UserData", epcModel._UserData);
-        map.putString("TagetData", epcModel._TagetData);
-        map.putString("TagType", epcModel._TagType);
+        map.putString("sensorData", epcModel._SensorData);
+        map.putDouble("temperature", UHFReader._TagEM.ConvetTemp(epcModel));
+        map.putString("userData", epcModel._UserData);
+        map.putString("tagetData", epcModel._TagetData);
+        map.putString("tagType", epcModel._TagType);
         sendEvent("rigoiotRFIDEvent", map);
       }
     };
