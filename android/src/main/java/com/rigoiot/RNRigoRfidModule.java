@@ -68,7 +68,7 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
      * @param cb       结果回调
      */
   @ReactMethod
-  public void read(final String type,
+  public void Read(final String type,
                    final int readType,
                    final String param,
                    final int readTime,
