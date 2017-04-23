@@ -82,11 +82,11 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
       WritableMap map = Arguments.createMap();
       map.putString("EPC", "111111111");
       map.putString("TID", "222222222");
-      map.putString("SensorData", "010101010101");
-      map.putDouble("Temperature", -64);
-      map.putString("UserData", "模拟数据，无效温度");
-      map.putString("TagetData", "0000000000");
-      map.putString("TagType", "6C");
+      map.putString("sensorData", "010101010101");
+      map.putDouble("temperature", -64);
+      map.putString("userData", "模拟数据，无效温度");
+      map.putString("tagetData", "0000000000");
+      map.putString("tagType", "6C");
       sendEvent("rigoiotRFIDEvent", map);
 
       WritableMap map2 = Arguments.createMap();
