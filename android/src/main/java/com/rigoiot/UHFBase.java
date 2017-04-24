@@ -21,7 +21,7 @@ public class UHFBase {
 
 	static Boolean _UHFSTATE = false; // 模块是否已经打开
 	static int _NowAntennaNo = 1; // 读写器天线编号
-	static int _UpDataTime = 0; // 重复标签上传时间，控制标签上传速度不要太快
+	static int _UpDataTime = 500; // 重复标签上传时间，控制标签上传速度不要太快
 	static int _Max_Power = 30; // 读写器最大发射功率
 	static int _Min_Power = 0; // 读写器最小发射功率
 

@@ -98,6 +98,16 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
       map2.putString("tagetData", "0000000000");
       map2.putString("tagType", "6C");
       sendEvent("rigoiotRFIDEvent", map2);
+
+      WritableMap map3 = Arguments.createMap();
+      map3.putString("EPC", "000000000");
+      map3.putString("TID", "111111111");
+      map3.putString("sensorData", "010101010101");
+      map3.putDouble("temperature", -21.5);
+      map3.putString("userData", "模拟数据");
+      map3.putString("tagetData", "0000000000");
+      map3.putString("tagType", "6C");
+      sendEvent("rigoiotRFIDEvent", map3);
       return;
     }
 
@@ -157,7 +167,7 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
                        final Callback cb) {
     Log.i(TAG, "Write()");
     if (isEmulator()) {
-      cb.invoke("Not supported", false);
+      cb.invoke("success");
       return;
     }
 
@@ -169,9 +179,10 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
     };
 
     if (!mUHF.Write(type, writeType, TID, data, handle)) {
-      cb.invoke("Write failed", false);
+      cb.invoke("Write failed");
+      return;
     }
 
-    cb.invoke("", true);
+    cb.invoke("success");
   }
 }
