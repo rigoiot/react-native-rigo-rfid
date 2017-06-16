@@ -115,15 +115,19 @@ public class RNRigoRfidModule extends ReactContextBaseJavaModule {
       @Override
       public void OutPutEPC(EPCModel epcModel) {
         Log.i(TAG, "Read(): " + epcModel.toString());
-        WritableMap map = Arguments.createMap();
-        map.putString("EPC", epcModel._EPC);
-        map.putString("TID", epcModel._TID);
-        map.putString("sensorData", epcModel._SensorData);
-        map.putDouble("temperature", UHFReader._TagEM.ConvetTemp(epcModel));
-        map.putString("userData", epcModel._UserData);
-        map.putString("tagetData", epcModel._TagetData);
-        map.putString("tagType", epcModel._TagType);
-        sendEvent("rigoiotRFIDEvent", map);
+        try {
+          WritableMap map = Arguments.createMap();
+          map.putString("EPC", epcModel._EPC);
+          map.putString("TID", epcModel._TID);
+          map.putString("sensorData", epcModel._SensorData);
+          map.putDouble("temperature", UHFReader._TagEM.ConvetTemp(epcModel));
+          map.putString("userData", epcModel._UserData);
+          map.putString("tagetData", epcModel._TagetData);
+          map.putString("tagType", epcModel._TagType);
+          sendEvent("rigoiotRFIDEvent", map);
+        } catch (Exception e) {
+          Log.e(TAG, "Read(): " + e.getLocalizedMessage());
+        }
       }
     };
 
